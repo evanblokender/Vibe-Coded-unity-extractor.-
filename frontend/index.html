@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>UnityRip — APK Asset Extractor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --card: #16161f;
+    --border: #2a2a3a;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --accent3: #7c3aed;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --error: #ef4444;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* GRID BACKGROUND */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* GLOW ORBS */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb-1 { width: 600px; height: 600px; background: rgba(124,58,237,0.15); top: -200px; right: -200px; }
+  .orb-2 { width: 400px; height: 400px; background: rgba(0,229,255,0.08); bottom: 100px; left: -150px; }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* HEADER */
+  header {
+    padding: 32px 0 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent3), var(--accent));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .logo-text {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .badge {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 60px 0 40px;
+    text-align: center;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.2rem, 5vw, 3.8rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 em {
+    font-style: normal;
+    color: var(--accent);
+    position: relative;
+  }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 16px;
+    max-width: 500px;
+    margin: 0 auto 40px;
+    line-height: 1.6;
+  }
+
+  /* UPLOAD ZONE */
+  .upload-zone {
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 56px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    background: var(--surface);
+    position: relative;
+    overflow: hidden;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+
+  .upload-zone::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at center, rgba(0,229,255,0.04), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .upload-zone:hover, .upload-zone.drag-over {
+    border-color: var(--accent);
+    background: rgba(0,229,255,0.04);
+  }
+
+  .upload-zone:hover::before, .upload-zone.drag-over::before { opacity: 1; }
+
+  .upload-zone.drag-over {
+    transform: scale(1.01);
+    box-shadow: 0 0 40px rgba(0,229,255,0.15);
+  }
+
+  .upload-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    display: block;
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .upload-zone h3 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .upload-zone p {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+
+  .btn-primary:hover {
+    background: #33eaff;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(0,229,255,0.3);
+  }
+
+  .btn-secondary {
+    background: var(--card);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .btn-secondary:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  .btn-ghost:hover { color: var(--text); border-color: var(--text); }
+
+  .btn-danger {
+    background: rgba(239,68,68,0.1);
+    color: var(--error);
+    border: 1px solid rgba(239,68,68,0.3);
+    font-size: 12px;
+    padding: 8px 14px;
+  }
+
+  .btn-danger:hover { background: rgba(239,68,68,0.2); }
+
+  .file-types {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  .file-type-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 3px 8px;
+    background: rgba(0,229,255,0.08);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 4px;
+    color: var(--accent);
+    letter-spacing: 0.05em;
+  }
+
+  #fileInput { display: none; }
+
+  /* PROGRESS SECTION */
+  #progressSection {
+    display: none;
+    max-width: 680px;
+    margin: 32px auto 0;
+  }
+
+  .file-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+
+  .file-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .file-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .file-info { flex: 1; min-width: 0; }
+
+  .file-name {
+    font-family: var(--mono);
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+  }
+
+  .file-size {
+    font-size: 12px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* STEPS */
+  .steps {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: all 0.3s;
+  }
+
+  .step.active {
+    border-color: var(--accent);
+    background: rgba(0,229,255,0.05);
+  }
+
+  .step.done {
+    border-color: rgba(34,197,94,0.3);
+    background: rgba(34,197,94,0.04);
+  }
+
+  .step.error {
+    border-color: rgba(239,68,68,0.3);
+    background: rgba(239,68,68,0.04);
+  }
+
+  .step-indicator {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    transition: all 0.3s;
+  }
+
+  .step.active .step-indicator {
+    border-color: var(--accent);
+    color: var(--accent);
+    animation: pulse-ring 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-ring {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(0,229,255,0.4); }
+    50% { box-shadow: 0 0 0 8px rgba(0,229,255,0); }
+  }
+
+  .step.done .step-indicator { background: var(--success); border-color: var(--success); color: #000; }
+  .step.error .step-indicator { background: var(--error); border-color: var(--error); color: #fff; }
+
+  .step-label {
+    font-size: 13px;
+    font-weight: 600;
+    flex: 1;
+  }
+
+  .step-detail {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .step.active .step-detail { color: var(--accent); }
+  .step.done .step-detail { color: var(--success); }
+
+  /* PROGRESS BAR */
+  .progress-bar-wrap {
+    height: 3px;
+    background: var(--border);
+    border-radius: 99px;
+    overflow: hidden;
+    margin: 16px 0 0;
+  }
+
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent3), var(--accent));
+    border-radius: 99px;
+    transition: width 0.5s ease;
+    width: 0%;
+  }
+
+  /* RESULTS */
+  #resultsSection {
+    display: none;
+    margin-top: 40px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+  }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: gap;
+  }
+
+  .results-title {
+    font-size: 24px;
+    font-weight: 800;
+  }
+
+  .results-meta {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .meta-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 20px;
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .meta-label {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: var(--mono);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .meta-value {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+    font-family: var(--mono);
+  }
+
+  /* FILTER BAR */
+  .filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .filter-btn {
+    padding: 7px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--muted);
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .filter-btn:hover { border-color: var(--text); color: var(--text); }
+
+  .filter-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(0,229,255,0.07);
+  }
+
+  .filter-count {
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--border);
+    padding: 1px 6px;
+    border-radius: 99px;
+  }
+
+  .filter-btn.active .filter-count {
+    background: rgba(0,229,255,0.2);
+    color: var(--accent);
+  }
+
+  .search-box {
+    margin-left: auto;
+    position: relative;
+  }
+
+  .search-box input {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 12px 7px 32px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12px;
+    outline: none;
+    width: 200px;
+    transition: border-color 0.2s;
+  }
+
+  .search-box input::placeholder { color: var(--muted); }
+  .search-box input:focus { border-color: var(--accent); }
+
+  .search-box::before {
+    content: '⌕';
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 14px;
+    pointer-events: none;
+  }
+
+  /* ASSET GRID */
+  .asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+  }
+
+  .asset-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.2s;
+    cursor: pointer;
+    position: relative;
+  }
+
+  .asset-card:hover {
+    border-color: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  }
+
+  .asset-card:hover .asset-overlay { opacity: 1; }
+
+  .asset-preview {
+    height: 130px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .asset-preview.texture { background: linear-gradient(135deg, #1a0a2e, #0a1a2e); }
+  .asset-preview.audio { background: linear-gradient(135deg, #0a1a1a, #0a2a1a); }
+  .asset-preview.mesh { background: linear-gradient(135deg, #1a1a0a, #2a1a0a); }
+  .asset-preview.scene { background: linear-gradient(135deg, #0a0a2e, #1a0a3e); }
+  .asset-preview.script { background: linear-gradient(135deg, #1a0a0a, #2a0a1a); }
+  .asset-preview.material { background: linear-gradient(135deg, #0a2a0a, #1a3a0a); }
+  .asset-preview.anim { background: linear-gradient(135deg, #2a1a00, #3a2a00); }
+  .asset-preview.prefab { background: linear-gradient(135deg, #00111a, #00221a); }
+
+  .asset-preview img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+  }
+
+  .asset-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .overlay-btn {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.3);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s;
+    color: #fff;
+  }
+
+  .overlay-btn:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+
+  .asset-info {
+    padding: 10px 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .asset-name {
+    font-family: var(--mono);
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+  }
+
+  .asset-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .asset-type-badge {
+    font-size: 9px;
+    font-family: var(--mono);
+    padding: 2px 6px;
+    border-radius: 3px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .badge-texture { background: rgba(124,58,237,0.2); color: #a78bfa; }
+  .badge-audio   { background: rgba(34,197,94,0.2);  color: #86efac; }
+  .badge-mesh    { background: rgba(245,158,11,0.2); color: #fcd34d; }
+  .badge-scene   { background: rgba(0,229,255,0.2);  color: var(--accent); }
+  .badge-script  { background: rgba(239,68,68,0.2);  color: #fca5a5; }
+  .badge-material{ background: rgba(16,185,129,0.2); color: #6ee7b7; }
+  .badge-anim    { background: rgba(251,191,36,0.2); color: #fde68a; }
+  .badge-prefab  { background: rgba(59,130,246,0.2); color: #93c5fd; }
+
+  .asset-size {
+    font-size: 10px;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* DOWNLOAD ALL */
+  .actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+    padding: 16px 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  .actions-bar p {
+    flex: 1;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  /* MODAL */
+  .modal-backdrop {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 28px;
+    position: relative;
+    animation: modal-in 0.25s ease;
+  }
+
+  @keyframes modal-in {
+    from { opacity: 0; transform: scale(0.95) translateY(16px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 16px; right: 16px;
+    width: 28px; height: 28px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+
+  .modal-close:hover { color: var(--text); border-color: var(--text); }
+
+  .modal-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 4px;
+  }
+
+  .modal-subtitle {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 20px;
+  }
+
+  .modal-preview {
+    width: 100%;
+    height: 200px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 64px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+
+  .modal-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .props-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 12px;
+    margin-bottom: 20px;
+  }
+
+  .props-table tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .props-table td {
+    padding: 8px 4px;
+  }
+
+  .props-table td:first-child {
+    color: var(--muted);
+    width: 40%;
+    text-transform: uppercase;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+  }
+
+  .props-table td:last-child { color: var(--text); }
+
+  /* TOAST */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 13px;
+    z-index: 200;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .toast.success { border-color: rgba(34,197,94,0.4); }
+  .toast.info { border-color: rgba(0,229,255,0.4); }
+
+  /* BACKEND NOTE */
+  .backend-note {
+    background: rgba(245,158,11,0.07);
+    border: 1px solid rgba(245,158,11,0.25);
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: var(--warn);
+    margin-top: 16px;
+    max-width: 680px;
+    margin: 16px auto 0;
+    line-height: 1.6;
+  }
+
+  .backend-note strong { display: block; margin-bottom: 4px; font-size: 13px; }
+
+  .backend-note code {
+    font-family: var(--mono);
+    font-size: 11px;
+    background: rgba(0,0,0,0.3);
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    .results-meta { gap: 8px; }
+    .meta-card { min-width: 100px; padding: 12px 14px; }
+    .asset-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+    .search-box input { width: 140px; }
+    header { flex-direction: column; gap: 12px; text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="wrap">
+  <!-- HEADER -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">⬡</div>
+      <div class="logo-text">Unity<span>Rip</span></div>
+    </div>
+    <span class="badge">v1.0.0 · ALPHA</span>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <h1>Extract Unity Assets<br>from <em>any APK</em></h1>
+    <p>Upload an Android APK file. We'll decompile it, locate Unity asset bundles, and let you browse and download every asset.</p>
+
+    <!-- UPLOAD ZONE -->
+    <div class="upload-zone" id="uploadZone">
+      <span class="upload-icon">📦</span>
+      <h3>Drop your APK here</h3>
+      <p>or click to browse files</p>
+      <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+        ⬆ Choose APK File
+      </button>
+      <div class="file-types">
+        <span class="file-type-tag">.apk</span>
+        <span class="file-type-tag">.xapk</span>
+        <span class="file-type-tag">.apks</span>
+      </div>
+      <input type="file" id="fileInput" accept=".apk,.xapk,.apks" />
+    </div>
+
+
+  </section>
+
+  <!-- PROGRESS -->
+  <section id="progressSection">
+    <div class="file-card">
+      <div class="file-card-header">
+        <div class="file-icon">📦</div>
+        <div class="file-info">
+          <div class="file-name" id="uploadedFileName">game.apk</div>
+          <div class="file-size" id="uploadedFileSize">0 MB</div>
+        </div>
+        <button class="btn btn-danger" onclick="resetAll()">✕ Cancel</button>
+      </div>
+
+      <div class="steps" id="stepsContainer">
+        <div class="step" id="step-upload">
+          <div class="step-indicator" id="si-upload">1</div>
+          <div class="step-label">Uploading APK</div>
+          <div class="step-detail" id="sd-upload">Waiting...</div>
+        </div>
+        <div class="step" id="step-decompile">
+          <div class="step-indicator" id="si-decompile">2</div>
+          <div class="step-label">Decompiling with apktool</div>
+          <div class="step-detail" id="sd-decompile">Waiting...</div>
+        </div>
+        <div class="step" id="step-find">
+          <div class="step-indicator" id="si-find">3</div>
+          <div class="step-label">Locating Unity bundles</div>
+          <div class="step-detail" id="sd-find">Waiting...</div>
+        </div>
+        <div class="step" id="step-extract">
+          <div class="step-indicator" id="si-extract">4</div>
+          <div class="step-label">Extracting assets</div>
+          <div class="step-detail" id="sd-extract">Waiting...</div>
+        </div>
+        <div class="step" id="step-index">
+          <div class="step-indicator" id="si-index">5</div>
+          <div class="step-label">Indexing asset catalog</div>
+          <div class="step-detail" id="sd-index">Waiting...</div>
+        </div>
+      </div>
+
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section id="resultsSection">
+    <div class="results-header">
+      <h2 class="results-title">🎮 Unity Assets Found</h2>
+    </div>
+
+    <div class="results-meta" id="resultsMeta"></div>
+
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-btn active" data-filter="all" onclick="setFilter('all', this)">
+        All <span class="filter-count" id="fc-all">0</span>
+      </button>
+      <button class="filter-btn" data-filter="texture" onclick="setFilter('texture', this)">
+        🖼 Textures <span class="filter-count" id="fc-texture">0</span>
+      </button>
+      <button class="filter-btn" data-filter="audio" onclick="setFilter('audio', this)">
+        🔊 Audio <span class="filter-count" id="fc-audio">0</span>
+      </button>
+      <button class="filter-btn" data-filter="mesh" onclick="setFilter('mesh', this)">
+        🧊 Meshes <span class="filter-count" id="fc-mesh">0</span>
+      </button>
+      <button class="filter-btn" data-filter="scene" onclick="setFilter('scene', this)">
+        🌐 Scenes <span class="filter-count" id="fc-scene">0</span>
+      </button>
+      <button class="filter-btn" data-filter="script" onclick="setFilter('script', this)">
+        📜 Scripts <span class="filter-count" id="fc-script">0</span>
+      </button>
+      <button class="filter-btn" data-filter="material" onclick="setFilter('material', this)">
+        🎨 Materials <span class="filter-count" id="fc-material">0</span>
+      </button>
+      <button class="filter-btn" data-filter="anim" onclick="setFilter('anim', this)">
+        🎬 Animations <span class="filter-count" id="fc-anim">0</span>
+      </button>
+      <button class="filter-btn" data-filter="prefab" onclick="setFilter('prefab', this)">
+        🧩 Prefabs <span class="filter-count" id="fc-prefab">0</span>
+      </button>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search assets..." oninput="filterAssets()" />
+      </div>
+    </div>
+
+    <div class="asset-grid" id="assetGrid"></div>
+
+    <div class="actions-bar">
+      <p id="selectedCount">Showing all assets from the extracted Unity project</p>
+      <button class="btn btn-ghost" onclick="downloadAll('project')">⬇ Download Unity Project (.zip)</button>
+      <button class="btn btn-primary" onclick="downloadAll('assets')">⬬ Download All Assets</button>
+    </div>
+  </section>
+</div>
+
+<!-- MODAL -->
+<div class="modal-backdrop" id="assetModal" onclick="closeModal(event)">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-title" id="modalTitle">Asset Name</div>
+    <div class="modal-subtitle" id="modalSubtitle">Type · Size · Bundle</div>
+    <div class="modal-preview" id="modalPreview"></div>
+    <table class="props-table" id="modalProps"></table>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="downloadAsset()">⬇ Download Asset</button>
+      <button class="btn btn-secondary" id="modalViewBtn" onclick="viewRaw()">👁 View Raw</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+// When served from the same Render server, API is on the same origin.
+// If hosting frontend separately, set this to your Render backend URL:
+const API_BASE = window.location.origin;
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let allAssets    = [];
+let currentFilter = 'all';
+let currentAsset  = null;
+let currentJobId  = null;
+let pollTimer     = null;
+
+const TYPE_COLORS = {
+  texture:'#1a0a2e', audio:'#0a1a1a', mesh:'#1a1a0a', scene:'#0a0a2e',
+  script:'#1a0a0a', material:'#0a2a0a', anim:'#2a1a00', prefab:'#00111a',
+  shader:'#1a002a', font:'#001a2a', asset:'#001122', unknown:'#111'
+};
+
+// ─── DOM REFS ────────────────────────────────────────────────────────────────
+const uploadZone      = document.getElementById('uploadZone');
+const fileInput       = document.getElementById('fileInput');
+const progressSection = document.getElementById('progressSection');
+const resultsSection  = document.getElementById('resultsSection');
+
+// ─── DRAG AND DROP ───────────────────────────────────────────────────────────
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+});
+uploadZone.addEventListener('click', e => { if (e.target.tagName !== 'BUTTON') fileInput.click(); });
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+// ─── HANDLE FILE ─────────────────────────────────────────────────────────────
+async function handleFile(file) {
+  const validExts = ['.apk', '.xapk', '.apks'];
+  if (!validExts.some(ext => file.name.toLowerCase().endsWith(ext))) {
+    showToast('⚠ Please upload a valid APK file', 'warn');
+    return;
+  }
+
+  document.getElementById('uploadedFileName').textContent = file.name;
+  document.getElementById('uploadedFileSize').textContent = formatSize(file.size);
+
+  uploadZone.parentElement.style.display = 'none';
+  progressSection.style.display = 'block';
+  resultsSection.style.display = 'none';
+
+  // Mark upload step as active immediately
+  setStepActive('upload', '→ Uploading to server...');
+
+  try {
+    const jobId = await uploadAPK(file);
+    currentJobId = jobId;
+    setStepDone('upload');
+    document.getElementById('progressBar').style.width = '10%';
+    startPolling(jobId);
+  } catch (err) {
+    setStepError('upload', err.message);
+    showToast('✕ Upload failed: ' + err.message, 'error');
+  }
+}
+
+// ─── UPLOAD ──────────────────────────────────────────────────────────────────
+async function uploadAPK(file) {
+  const fd = new FormData();
+  fd.append('apk', file);
+
+  const res = await fetch(`${API_BASE}/api/upload`, { method: 'POST', body: fd });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: 'Upload failed' }));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+  const { jobId } = await res.json();
+  return jobId;
+}
+
+// ─── POLL STATUS ─────────────────────────────────────────────────────────────
+// Map backend step names → UI step IDs
+const STEP_MAP = {
+  upload:    { id: 'upload',    pct: 10 },
+  decompile: { id: 'decompile', pct: 35 },
+  find:      { id: 'find',      pct: 55 },
+  extract:   { id: 'extract',   pct: 80 },
+  index:     { id: 'index',     pct: 92 },
+  done:      { id: 'index',     pct: 100 },
+};
+
+let lastStep = null;
+
+function startPolling(jobId) {
+  if (pollTimer) clearInterval(pollTimer);
+  pollTimer = setInterval(() => pollStatus(jobId), 1500);
+}
+
+async function pollStatus(jobId) {
+  try {
+    const res = await fetch(`${API_BASE}/api/status/${jobId}`);
+    if (!res.ok) return;
+    const job = await res.json();
+
+    const mapped = STEP_MAP[job.step] || STEP_MAP['upload'];
+
+    // Mark previous steps done, current active
+    const stepOrder = ['upload','decompile','find','extract','index'];
+    const currentIdx = stepOrder.indexOf(mapped.id);
+
+    stepOrder.forEach((sid, i) => {
+      if (i < currentIdx) setStepDone(sid);
+      else if (i === currentIdx && job.status !== 'done') setStepActive(sid, job.stepDetail || '');
+    });
+
+    document.getElementById('progressBar').style.width = (job.progress || mapped.pct) + '%';
+
+    if (job.status === 'done') {
+      clearInterval(pollTimer);
+      stepOrder.forEach(sid => setStepDone(sid));
+      document.getElementById('progressBar').style.width = '100%';
+      setTimeout(() => loadResults(jobId), 500);
+    } else if (job.status === 'error') {
+      clearInterval(pollTimer);
+      setStepError(mapped.id, job.error || 'Extraction failed');
+      showToast('✕ ' + (job.error || 'Extraction failed'), 'error');
+    }
+  } catch (e) {
+    console.warn('Poll error:', e);
+  }
+}
+
+// ─── LOAD RESULTS ─────────────────────────────────────────────────────────────
+async function loadResults(jobId) {
+  try {
+    const res = await fetch(`${API_BASE}/api/assets/${jobId}`);
+    if (!res.ok) throw new Error('Failed to load assets');
+    const { assets, stats } = await res.json();
+
+    allAssets = assets;
+    progressSection.style.display = 'none';
+    resultsSection.style.display = 'block';
+
+    renderMeta(stats);
+    updateFilterCounts();
+    renderAssets();
+    showToast(`✓ Found ${assets.length} Unity assets!`, 'success');
+  } catch (err) {
+    showToast('✕ Failed to load results: ' + err.message, 'error');
+  }
+}
+
+// ─── RENDER META ─────────────────────────────────────────────────────────────
+function renderMeta(stats) {
+  const types = Object.keys(stats.byType || {}).length;
+  document.getElementById('resultsMeta').innerHTML = `
+    <div class="meta-card">
+      <div class="meta-label">Total Assets</div>
+      <div class="meta-value">${stats.total}</div>
+    </div>
+    <div class="meta-card">
+      <div class="meta-label">Asset Types</div>
+      <div class="meta-value">${types}</div>
+    </div>
+    <div class="meta-card">
+      <div class="meta-label">Bundles Found</div>
+      <div class="meta-value">${stats.bundleCount || 0}</div>
+    </div>
+    <div class="meta-card">
+      <div class="meta-label">Total Size</div>
+      <div class="meta-value" style="font-size:16px">${stats.totalSize || '—'}</div>
+    </div>
+  `;
+}
+
+// ─── FILTER COUNTS ───────────────────────────────────────────────────────────
+function updateFilterCounts() {
+  const types = ['texture','audio','mesh','scene','script','material','anim','prefab'];
+  document.getElementById('fc-all').textContent = allAssets.length;
+  types.forEach(t => {
+    const el = document.getElementById('fc-' + t);
+    if (el) el.textContent = allAssets.filter(a => a.type === t).length;
+  });
+}
+
+// ─── RENDER ASSETS ────────────────────────────────────────────────────────────
+function renderAssets() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = allAssets.filter(a => {
+    const matchType   = currentFilter === 'all' || a.type === currentFilter;
+    const matchSearch = !search || a.name.toLowerCase().includes(search) || (a.bundle || '').toLowerCase().includes(search);
+    return matchType && matchSearch;
+  });
+
+  document.getElementById('selectedCount').textContent =
+    `Showing ${filtered.length} of ${allAssets.length} assets`;
+
+  const PREVIEW_TYPES = new Set(['texture','png','jpg','jpeg','webp']);
+
+  document.getElementById('assetGrid').innerHTML = filtered.map(a => {
+    const canPreview = a.type === 'texture';
+    const previewImg = canPreview
+      ? `<img src="${API_BASE}/api/preview/${currentJobId}/${a.id}" onerror="this.style.display='none'" loading="lazy" />`
+      : '';
+    return `
+      <div class="asset-card" onclick="openAsset('${a.id}')">
+        <div class="asset-preview ${a.type}" style="background:linear-gradient(135deg,${TYPE_COLORS[a.type]||'#111'},#000)">
+          ${previewImg}
+          <span>${a.emoji || '📦'}</span>
+          <div class="asset-overlay">
+            <div class="overlay-btn" title="Preview" onclick="event.stopPropagation();openAsset('${a.id}')">👁</div>
+            <div class="overlay-btn" title="Download" onclick="event.stopPropagation();downloadSingle('${a.id}')">⬇</div>
+          </div>
+        </div>
+        <div class="asset-info">
+          <div class="asset-name">${a.filename || a.name}</div>
+          <div class="asset-meta">
+            <span class="asset-type-badge badge-${a.type || 'unknown'}">${a.type || '?'}</span>
+            <span class="asset-size">${a.size}</span>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+// ─── FILTER ───────────────────────────────────────────────────────────────────
+function setFilter(type, btn) {
+  currentFilter = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAssets();
+}
+
+function filterAssets() { renderAssets(); }
+
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+function openAsset(id) {
+  currentAsset = allAssets.find(a => a.id === id);
+  if (!currentAsset) return;
+  const a = currentAsset;
+
+  document.getElementById('modalTitle').textContent    = a.filename || a.name;
+  document.getElementById('modalSubtitle').textContent = `${(a.type||'?').toUpperCase()} · ${a.size} · ${a.bundle || ''}`;
+
+  const prev = document.getElementById('modalPreview');
+  prev.style.background = `linear-gradient(135deg, ${TYPE_COLORS[a.type]||'#111'}, #000)`;
+
+  if (a.type === 'texture') {
+    prev.innerHTML = `<img src="${API_BASE}/api/preview/${currentJobId}/${a.id}" style="max-width:100%;max-height:100%;object-fit:contain" onerror="this.outerHTML='<span style=font-size:64px>${a.emoji||'📦'}</span>'" />`;
+  } else if (a.type === 'audio') {
+    prev.innerHTML = `<div style="text-align:center"><div style="font-size:48px;margin-bottom:12px">${a.emoji||'🔊'}</div><audio controls src="${API_BASE}/api/preview/${currentJobId}/${a.id}" style="width:280px"></audio></div>`;
+  } else {
+    prev.innerHTML = `<span style="font-size:72px">${a.emoji || '📦'}</span>`;
+  }
+
+  const rows = [
+    ['Type',     a.type],
+    ['Format',   (a.ext||'').toUpperCase()],
+    ['File Size', a.size],
+    ['Bundle',   a.bundle],
+  ].filter(r => r[1]).map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join('');
+
+  document.getElementById('modalProps').innerHTML = rows;
+  document.getElementById('assetModal').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('assetModal')) {
+    document.getElementById('assetModal').classList.remove('open');
+  }
+}
+
+// ─── DOWNLOADS ────────────────────────────────────────────────────────────────
+function downloadSingle(id) {
+  if (!currentJobId) return;
+  showToast('⬇ Starting download...', 'info');
+  window.location.href = `${API_BASE}/api/download/${currentJobId}/${id}`;
+}
+
+function downloadAsset() {
+  if (!currentAsset) return;
+  downloadSingle(currentAsset.id);
+}
+
+function viewRaw() {
+  if (!currentAsset) return;
+  window.open(`${API_BASE}/api/preview/${currentJobId}/${currentAsset.id}`, '_blank');
+}
+
+function downloadAll(mode) {
+  if (!currentJobId) return;
+  showToast(`⬇ Preparing ${mode === 'project' ? 'Unity Project' : 'All Assets'} zip...`, 'info');
+  window.location.href = `${API_BASE}/api/download-all/${currentJobId}?mode=${mode}`;
+}
+
+// ─── STEP HELPERS ─────────────────────────────────────────────────────────────
+function setStepActive(id, detail) {
+  const el = document.getElementById('step-' + id); if (!el) return;
+  el.className = 'step active';
+  if (detail) document.getElementById('sd-' + id).textContent = detail;
+}
+function setStepDone(id) {
+  const el = document.getElementById('step-' + id); if (!el) return;
+  el.className = 'step done';
+  document.getElementById('si-' + id).textContent = '✓';
+  document.getElementById('sd-' + id).textContent = 'Done';
+}
+function setStepError(id, msg) {
+  const el = document.getElementById('step-' + id); if (!el) return;
+  el.className = 'step error';
+  document.getElementById('si-' + id).textContent = '✕';
+  document.getElementById('sd-' + id).textContent = msg || 'Error';
+}
+
+// ─── RESET ────────────────────────────────────────────────────────────────────
+function resetAll() {
+  if (pollTimer) clearInterval(pollTimer);
+  currentJobId  = null;
+  allAssets     = [];
+  currentAsset  = null;
+
+  progressSection.style.display = 'none';
+  resultsSection.style.display  = 'none';
+  uploadZone.parentElement.style.display = 'block';
+  fileInput.value = '';
+  document.getElementById('progressBar').style.width = '0%';
+
+  ['upload','decompile','find','extract','index'].forEach((id, i) => {
+    const el = document.getElementById('step-' + id);
+    if (el) el.className = 'step';
+    document.getElementById('si-' + id).textContent = i + 1;
+    document.getElementById('sd-' + id).textContent = 'Waiting...';
+  });
+}
+
+// ─── TOAST ────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = 'info') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/(1024*1024)).toFixed(1) + ' MB';
+}
+</script>
+</body>
+</html>
